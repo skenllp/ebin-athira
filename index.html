@@ -2605,12 +2605,79 @@
   <script src="https://unpkg.com/split-type@0.3.4/umd/index.min.js"></script>
 
   <script>
+    /* ================= MUSIC PLAYER (shared: floating + footer button) ================= */
+    const player = document.getElementById('player');
+    const footerMusicBtn = document.getElementById('footer-music-btn');
+    const music = document.getElementById('bg-music');
+    const iconPlay = document.getElementById('icon-play');
+    const iconPause = document.getElementById('icon-pause');
+    let playing = false;
+
+    function startMusic() {
+      if (!music) return;
+      music.play().then(() => {
+        playing = true;
+        if (player) player.classList.add('playing');
+        if (iconPlay) iconPlay.style.display = 'none';
+        if (iconPause) iconPause.style.display = 'block';
+        if (footerMusicBtn) footerMusicBtn.textContent = '❚❚ Pause Music';
+      }).catch((err) => {
+        console.warn('Audio playback prevented or waiting for interaction:', err);
+      });
+    }
+
+    function pauseMusic() {
+      if (!music) return;
+      music.pause();
+      playing = false;
+      if (player) player.classList.remove('playing');
+      if (iconPlay) iconPlay.style.display = 'block';
+      if (iconPause) iconPause.style.display = 'none';
+      if (footerMusicBtn) footerMusicBtn.textContent = '♪ Music';
+    }
+
+    function toggleMusic() {
+      if (!playing) {
+        startMusic();
+      } else {
+        pauseMusic();
+      }
+    }
+
+    /* Pause music when user switches tabs or minimizes browser, resume when returning */
+    let wasPlayingBeforeHidden = false;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (playing) {
+          wasPlayingBeforeHidden = true;
+          pauseMusic();
+        }
+      } else {
+        if (wasPlayingBeforeHidden) {
+          wasPlayingBeforeHidden = false;
+          startMusic();
+        }
+      }
+    });
+
+    /* Stop and silence music immediately when tab or browser is closed / navigating away */
+    window.addEventListener('pagehide', () => {
+      if (music) {
+        music.pause();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (music) {
+        music.pause();
+      }
+    });
+
     /* ================= INTRO VIDEO (UNCHANGED LOGIC) ================= */
     const introScreen = document.getElementById('intro-screen');
     const introVideo = document.getElementById('intro-video');
     const openInviteBtn = document.getElementById('open-invitation');
     const site = document.getElementById('site');
-    let playing = false;
     document.body.style.overflow = 'hidden';
 
     setTimeout(() => openInviteBtn.classList.add('show'), 2000);
@@ -3173,72 +3240,6 @@ END:VCALENDAR`;
         });
     });
 
-    /* ================= MUSIC PLAYER (shared: floating + footer button) ================= */
-    const player = document.getElementById('player');
-    const footerMusicBtn = document.getElementById('footer-music-btn');
-    const music = document.getElementById('bg-music');
-    const iconPlay = document.getElementById('icon-play');
-    const iconPause = document.getElementById('icon-pause');
-
-    function startMusic() {
-      if (!music) return;
-      music.play().then(() => {
-        playing = true;
-        if (player) player.classList.add('playing');
-        if (iconPlay) iconPlay.style.display = 'none';
-        if (iconPause) iconPause.style.display = 'block';
-        if (footerMusicBtn) footerMusicBtn.textContent = '❚❚ Pause Music';
-      }).catch((err) => {
-        console.warn('Audio playback prevented or waiting for interaction:', err);
-      });
-    }
-
-    function pauseMusic() {
-      if (!music) return;
-      music.pause();
-      playing = false;
-      if (player) player.classList.remove('playing');
-      if (iconPlay) iconPlay.style.display = 'block';
-      if (iconPause) iconPause.style.display = 'none';
-      if (footerMusicBtn) footerMusicBtn.textContent = '♪ Music';
-    }
-
-    function toggleMusic() {
-      if (!playing) {
-        startMusic();
-      } else {
-        pauseMusic();
-      }
-    }
-
-    /* Pause music when user switches tabs or minimizes browser, resume when returning */
-    let wasPlayingBeforeHidden = false;
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        if (playing) {
-          wasPlayingBeforeHidden = true;
-          pauseMusic();
-        }
-      } else {
-        if (wasPlayingBeforeHidden) {
-          wasPlayingBeforeHidden = false;
-          startMusic();
-        }
-      }
-    });
-
-    /* Stop and silence music immediately when tab or browser is closed / navigating away */
-    window.addEventListener('pagehide', () => {
-      if (music) {
-        music.pause();
-      }
-    });
-
-    window.addEventListener('beforeunload', () => {
-      if (music) {
-        music.pause();
-      }
-    });
   </script>
 </body>
 
