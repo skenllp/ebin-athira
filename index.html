@@ -2597,7 +2597,7 @@
       <rect x="14" y="4" width="4" height="16"></rect>
     </svg>
   </button>
-  <audio id="bg-music" loop src="music.webm"></audio>
+  <audio id="bg-music" loop preload="auto" src="music.mp3"></audio>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
@@ -2610,6 +2610,7 @@
     const introVideo = document.getElementById('intro-video');
     const openInviteBtn = document.getElementById('open-invitation');
     const site = document.getElementById('site');
+    let playing = false;
     document.body.style.overflow = 'hidden';
 
     setTimeout(() => openInviteBtn.classList.add('show'), 2000);
@@ -2623,23 +2624,13 @@
       initScrollAnimations();
 
       /* Autoplay music on "Open Invitation" click (user gesture allows it) */
-      const bgMusic = document.getElementById('bg-music');
-      if (bgMusic && !playing) {
-        bgMusic.play().then(() => {
-          playing = true;
-          const pl = document.getElementById('player');
-          const ip = document.getElementById('icon-play');
-          const ipause = document.getElementById('icon-pause');
-          if (pl) pl.classList.add('playing');
-          if (ip) ip.style.display = 'none';
-          if (ipause) ipause.style.display = 'block';
-          const fmb = document.getElementById('footer-music-btn');
-          if (fmb) fmb.textContent = '❚❚ Pause Music';
-        }).catch(() => { });
-      }
+      startMusic();
     }
     introVideo.addEventListener('ended', endIntro);
-    openInviteBtn.addEventListener('click', endIntro);
+    openInviteBtn.addEventListener('click', () => {
+      startMusic();
+      endIntro();
+    });
     introVideo.play().catch(() => {
       document.getElementById('intro-tap').addEventListener('click', () => introVideo.play());
     });
@@ -3188,20 +3179,66 @@ END:VCALENDAR`;
     const music = document.getElementById('bg-music');
     const iconPlay = document.getElementById('icon-play');
     const iconPause = document.getElementById('icon-pause');
-    let playing = false;
+
+    function startMusic() {
+      if (!music) return;
+      music.play().then(() => {
+        playing = true;
+        if (player) player.classList.add('playing');
+        if (iconPlay) iconPlay.style.display = 'none';
+        if (iconPause) iconPause.style.display = 'block';
+        if (footerMusicBtn) footerMusicBtn.textContent = '❚❚ Pause Music';
+      }).catch((err) => {
+        console.warn('Audio playback prevented or waiting for interaction:', err);
+      });
+    }
+
+    function pauseMusic() {
+      if (!music) return;
+      music.pause();
+      playing = false;
+      if (player) player.classList.remove('playing');
+      if (iconPlay) iconPlay.style.display = 'block';
+      if (iconPause) iconPause.style.display = 'none';
+      if (footerMusicBtn) footerMusicBtn.textContent = '♪ Music';
+    }
+
     function toggleMusic() {
       if (!playing) {
-        music.play().then(() => {
-          playing = true; player.classList.add('playing');
-          iconPlay.style.display = 'none'; iconPause.style.display = 'block';
-          if (footerMusicBtn) footerMusicBtn.textContent = '❚❚ Pause Music';
-        }).catch(() => { showToast('Add music.webm to this folder to enable music'); });
+        startMusic();
       } else {
-        music.pause(); playing = false; player.classList.remove('playing');
-        iconPlay.style.display = 'block'; iconPause.style.display = 'none';
-        if (footerMusicBtn) footerMusicBtn.textContent = '♪ Music';
+        pauseMusic();
       }
     }
+
+    /* Pause music when user switches tabs or minimizes browser, resume when returning */
+    let wasPlayingBeforeHidden = false;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (playing) {
+          wasPlayingBeforeHidden = true;
+          pauseMusic();
+        }
+      } else {
+        if (wasPlayingBeforeHidden) {
+          wasPlayingBeforeHidden = false;
+          startMusic();
+        }
+      }
+    });
+
+    /* Stop and silence music immediately when tab or browser is closed / navigating away */
+    window.addEventListener('pagehide', () => {
+      if (music) {
+        music.pause();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (music) {
+        music.pause();
+      }
+    });
   </script>
 </body>
 
